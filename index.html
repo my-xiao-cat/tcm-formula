@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>🌿 中药配方参考</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+      background:#f0ebe3;color:#333;min-height:100vh
+    }
+    .app{max-width:480px;margin:0 auto;padding:16px 16px 100px}
+
+    /* Header */
+    .header{
+      text-align:center;padding:24px 0 16px;
+      background:linear-gradient(135deg,#2d5016 0%,#4a7c2e 100%);
+      margin:-16px -16px 16px;border-radius:0 0 24px 24px;padding:32px 16px 24px
+    }
+    .header h1{font-size:24px;color:#fff;font-weight:700}
+    .header p{font-size:13px;color:rgba(255,255,255,.7);margin-top:4px}
+    .header .sub{font-size:11px;color:rgba(255,255,255,.5);margin-top:8px}
+
+    /* Search / Input Card */
+    .input-card{
+      background:#fff;border-radius:16px;padding:20px;margin-bottom:14px;
+      box-shadow:0 4px 15px rgba(0,0,0,.06)
+    }
+    .input-card h3{
+      font-size:15px;color:#2d5016;margin-bottom:12px;font-weight:600
+    }
+
+    /* Symptom Tags */
+    .symptom-group{margin-bottom:14px}
+    .symptom-group:last-child{margin-bottom:0}
+    .symptom-label{
+      font-size:13px;color:#666;margin-bottom:6px;font-weight:500
+    }
+    .tag-wrap{display:flex;flex-wrap:wrap;gap:8px}
+    .tag{
+      padding:6px 14px;border-radius:20px;font-size:13px;cursor:pointer;
+      border:1.5px solid #ddd;background:#fff;color:#555;
+      transition:all .2s;user-select:none
+    }
+    .tag:active{transform:scale(.95)}
+    .tag.selected{
+      background:#4a7c2e;color:#fff;border-color:#4a7c2e
+    }
+
+    /* Submit Button */
+    .submit-area{padding-top:8px}
+    .btn-submit{
+      width:100%;padding:14px;border:none;border-radius:12px;
+      font-size:16px;font-weight:600;cursor:pointer;
+      background:linear-gradient(135deg,#2d5016 0%,#4a7c2e 100%);color:#fff;
+      transition:transform .15s,box-shadow .15s;
+      box-shadow:0 4px 15px rgba(45,80,22,.3)
+    }
+    .btn-submit:active{transform:scale(.97)}
+    .btn-submit:disabled{opacity:.5;cursor:not-allowed}
+
+    /* Result */
+    .result-area{display:none}
+    .result-area.show{display:block}
+
+    .prescription-card{
+      background:#fff;border-radius:16px;overflow:hidden;margin-bottom:14px;
+      box-shadow:0 4px 15px rgba(0,0,0,.06)
+    }
+    .prescription-header{
+      background:linear-gradient(135deg,#2d5016 0%,#4a7c2e 100%);
+      padding:16px 20px;color:#fff
+    }
+    .prescription-header h2{font-size:20px;font-weight:700}
+    .prescription-header .pinyin{font-size:12px;opacity:.7;margin-top:2px}
+    .prescription-body{padding:16px 20px}
+
+    .ingredient-list{margin-bottom:14px}
+    .ingredient-list h4{
+      font-size:14px;color:#2d5016;margin-bottom:8px;font-weight:600
+    }
+    .ingredient-item{
+      display:flex;justify-content:space-between;padding:6px 0;
+      border-bottom:1px solid #f0f0f0;font-size:14px
+    }
+    .ingredient-item:last-child{border-bottom:none}
+    .ingredient-item .name{color:#333}
+    .ingredient-item .amount{color:#999;font-size:13px}
+
+    .action-section{
+      background:#fff8f0;border-radius:12px;padding:14px;
+      margin-bottom:14px;border-left:3px solid #c8a96e
+    }
+    .action-section h4{
+      font-size:14px;color:#8b6914;margin-bottom:6px;font-weight:600
+    }
+    .action-section p{font-size:13px;color:#666;line-height:1.6}
+
+    .caution-section{
+      background:#fff0f0;border-radius:12px;padding:14px;
+      margin-bottom:14px;border-left:3px solid #c62828
+    }
+    .caution-section h4{
+      font-size:14px;color:#c62828;margin-bottom:6px;font-weight:600
+    }
+    .caution-section p{font-size:13px;color:#666;line-height:1.6}
+
+    /* Reset Button */
+    .btn-reset{
+      width:100%;padding:12px;border:1.5px solid #ddd;border-radius:12px;
+      font-size:14px;cursor:pointer;background:#fff;color:#666;
+      transition:all .2s;margin-top:4px
+    }
+    .btn-reset:active{background:#f5f5f5}
+
+    /* Footer */
+    .footer-text{
+      text-align:center;padding:20px 0;font-size:11px;color:#bbb;line-height:1.8
+    }
+
+    /* Badge */
+    .match-badge{
+      display:inline-block;padding:2px 10px;border-radius:10px;
+      font-size:11px;font-weight:500;margin-top:6px
+    }
+    .match-badge.high{background:rgba(255,255,255,.2);color:#fff}
+    .match-badge.medium{background:rgba(255,255,255,.15);color:#fff}
+
+    /* Animations */
+    @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+    .prescription-card{animation:fadeIn .35s ease}
+    .action-section,.caution-section{animation:fadeIn .35s ease}
+
+    @media(max-width:400px){
+      .app{padding:12px 12px 90px}
+      .header{padding:24px 12px 20px}
+      .tag{padding:5px 12px;font-size:12px}
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- Header -->
+    <div class="header">
+      <h1>🌿 中药配方参考</h1>
+      <p>根据身体状况，推荐经典方剂</p>
+      <div class="sub">仅供参考，不构成医疗建议</div>
+    </div>
+
+    <!-- Input Area -->
+    <div class="input-card" id="inputCard">
+      <h3>📋 请选择您的症状</h3>
+
+      <!-- Symptom Groups -->
+      <div id="symptomContainer"></div>
+
+      <div class="submit-area">
+        <button class="btn-submit" id="btnSubmit" onclick="getPrescription()">
+          🌿 查看推荐配方
+        </button>
+      </div>
+    </div>
+
+    <!-- Result Area -->
+    <div class="result-area" id="resultArea">
+      <div id="prescriptionContainer"></div>
+      <button class="btn-reset" onclick="resetAll()">⟳ 重新选择症状</button>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer-text">
+      ⚠️ 本工具仅供学习和参考<br>
+      实际用药请咨询专业中医师<br>
+      数据源自经典中医方剂学
+    </div>
+  </div>
+
+  <script>
+    // ===== DATA =====
+    const SYMPTOM_GROUPS = [
+      {
+        label: '😷 感冒/发热类',
+        symptoms: [
+          {id:'feng_han',text:'怕冷、发热轻、无汗'},
+          {id:'feng_re',text:'发热重、咽喉痛、口渴'},
+          {id:'jia_gan',text:'头身重痛、胸闷恶心'},
+          {id:'wei_qi',text:'气虚易感冒、自汗'},
+        ]
+      },
+      {
+        label: '😰 体虚/气血类',
+        symptoms: [
+          {id:'qi_xu',text:'气短乏力、语声低微'},
+          {id:'xue_xu',text:'面色苍白、头晕心悸'},
+          {id:'yin_xu',text:'口干咽燥、盗汗颧红'},
+          {id:'yang_xu',text:'畏寒肢冷、腰膝酸软'},
+        ]
+      },
+      {
+        label: '😣 脏腑/消化类',
+        symptoms: [
+          {id:'pi_wei',text:'食欲不振、大便溏稀'},
+          {id:'gan_yu',text:'胸闷胁痛、情绪抑郁'},
+          {id:'shi_re',text:'口苦口臭、小便黄赤'},
+          {id:'tan_shi',text:'身体困重、痰多苔腻'},
+        ]
+      },
+      {
+        label: '😫 其他常见症状',
+        symptoms: [
+          {id:'shi_mian',text:'失眠多梦、心烦不安'},
+          {id:'ke_sou',text:'咳嗽痰多、咽喉不适'},
+          {id:'tou_tong',text:'头痛头晕'},
+          {id:'bian_mi',text:'大便干燥、便秘'},
+        ]
+      }
+    ];
+
+    // ===== KNOWLEDGE BASE =====
+    const PRESCRIPTIONS = [
+      {
+        id:'gui_zhi_tang',
+        name:'桂枝汤',
+        pinyin:'Gui Zhi Tang',
+        matchTags:['feng_han'],
+        matchLevel:'高',
+        ingredients:[
+          {name:'桂枝',amount:'9g'},{name:'白芍',amount:'9g'},
+          {name:'生姜',amount:'9g'},{name:'大枣',amount:'3枚'},
+          {name:'甘草',amount:'6g'}
+        ],
+        action:'解肌发表，调和营卫。适用于外感风寒表虚证，症见头痛发热、汗出恶风、鼻鸣干呕、脉浮缓。',
+        caution:'本方为辛温解表剂，风热感冒及内热盛者不宜使用。服药期间忌生冷、油腻。'
+      },
+      {
+        id:'ma_huang_tang',
+        name:'麻黄汤',
+        pinyin:'Ma Huang Tang',
+        matchTags:['feng_han'],
+        matchLevel:'高',
+        ingredients:[
+          {name:'麻黄',amount:'9g'},{name:'桂枝',amount:'6g'},
+          {name:'杏仁',amount:'6g'},{name:'甘草',amount:'3g'}
+        ],
+        action:'发汗解表，宣肺平喘。适用于外感风寒表实证，症见恶寒发热、头身疼痛、无汗而喘、脉浮紧。',
+        caution:'本方发汗力强，体虚者、高血压、心脏病患者慎用。风热感冒不宜使用。'
+      },
+      {
+        id:'yin_qiao_san',
+        name:'银翘散',
+        pinyin:'Yin Qiao San',
+        matchTags:['feng_re'],
+        matchLevel:'高',
+        ingredients:[
+          {name:'金银花',amount:'15g'},{name:'连翘',amount:'15g'},
+          {name:'桔梗',amount:'6g'},{name:'薄荷',amount:'6g'},
+          {name:'竹叶',amount:'6g'},{name:'荆芥穗',amount:'6g'},
+          {name:'牛蒡子',amount:'6g'},{name:'芦根',amount:'10g'},
+          {name:'甘草',amount:'6g'}
+        ],
+        action:'辛凉解表，清热解毒。适用于风热感冒，症见发热重、微恶风寒、咽喉肿痛、咳嗽口渴、舌尖红。',
+        caution:'风寒感冒不宜使用。脾胃虚寒者慎用。'
+      },
+      {
+        id:'sang_ju_yin',
+        name:'桑菊饮',
+        pinyin:'Sang Ju Yin',
+        matchTags:['feng_re','ke_sou'],
+        matchLevel:'中',
+        ingredients:[
+          {name:'桑叶',amount:'9g'},{name:'菊花',amount:'6g'},
+          {name:'桔梗',amount:'6g'},{name:'连翘',amount:'6g'},
+          {name:'杏仁',amount:'6g'},{name:'薄荷',amount:'3g'},
+          {name:'芦根',amount:'10g'},{name:'甘草',amount:'3g'}
+        ],
+        action:'疏风清热，宣肺止咳。适用于风热感冒初起，症见咳嗽、微热、口微渴。',
+        caution:'风寒咳嗽不宜使用。'
+      },
+      {
+        id:'huo_xiang_zheng_qi',
+        name:'藿香正气散',
+        pinyin:'Huo Xiang Zheng Qi San',
+        matchTags:['jia_gan'],
+        matchLevel:'高',
+        ingredients:[
+          {name:'藿香',amount:'9g'},{name:'紫苏叶',amount:'6g'},
+          {name:'白芷',amount:'6g'},{name:'厚朴',amount:'6g'},
+          {name:'茯苓',amount:'9g'},{name:'陈皮',amount:'6g'},
+          {name:'半夏',amount:'6g'},{name:'白术',amount:'9g'},
+          {name:'大腹皮',amount:'6g'},{name:'桔梗',amount:'6g'},
+          {name:'甘草',amount:'3g'}
+        ],
+        action:'解表化湿，理气和中。适用于外感风寒、内伤湿滞证，症见恶寒发热、头身重痛、胸膈满闷、恶心呕吐、腹泻。',
+        caution:'阴虚火旺者慎用。服药期间忌生冷油腻。'
+      },
+      {
+        id:'si_jun_zi_tang',
+        name:'四君子汤',
+        pinyin:'Si Jun Zi Tang',
+        matchTags:['qi_xu','pi_wei'],
+        matchLevel:'高',
+        ingredients:[
+          {name:'人参',amount:'9g'},{name:'白术',amount:'9g'},
+          {name:'茯苓',amount:'9g'},{name:'甘草',amount:'6g'}
+        ],
+        action:'益气健脾。适用于脾胃气虚证，症见面色萎白、语声低微、气短乏力、食少便溏、舌淡苔白。',
+        caution:'实证、热证者不宜使用。服用人参时忌食萝卜、浓茶。'
+      },
+      {
+        id:'bu_zhong_yi_qi',
+        name:'补中益气汤',
+        pinyin:'Bu Zhong Yi Qi Tang',
+        matchTags:['qi_xu','wei_qi'],
+        matchLevel:'中',
+        ingredients:[
+          {name:'黄芪',amount:'15g'},{name:'人参',amount:'9g'},
+          {name:'白术',amount:'9g'},{name:'当归',amount:'6g'},
+          {name:'陈皮',amount:'6g'},{name:'升麻',amount:'3g'},
+          {name:'柴胡',amount:'3g'},{name:'甘草',amount:'6g'}
+        ],
+        action:'补中益气，升阳举陷。适用于脾胃气虚、中气下陷证，症见气短乏力、食少、久泻脱肛、子宫脱垂。',
+        caution:'阴虚内热者慎用。感冒发热期间暂停服用。'
+      },
+      {
+        id:'si_wu_tang',
+        name:'四物汤',
+        pinyin:'Si Wu Tang',
+        matchTags:['xue_xu'],
+        matchLevel:'高',
+        ingredients:[
+          {name:'当归',amount:'12g'},{name:'川芎',amount:'9g'},
+          {name:'白芍',amount:'12g'},{name:'熟地黄',amount:'15g'}
+        ],
+        action:'补血调血。适用于营血虚滞证，症见头晕目眩、心悸失眠、面色无华、月经不调、崩漏。',
+        caution:'脾胃虚弱、食少便溏者慎用。湿盛中满者不宜使用。月经期慎用。'
+      },
+      {
+        id:'liu_wei_di_huang',
+        name:'六味地黄丸',
+        pinyin:'Liu Wei Di Huang Wan',
+        matchTags:['yin_xu'],
+        matchLevel:'高',
+        ingredients:[
+          {name:'熟地黄',amount:'24g'},{name:'山茱萸',amount:'12g'},
+          {name:'山药',amount:'12g'},{name:'泽泻',amount:'9g'},
+          {name:'茯苓',amount:'9g'},{name:'牡丹皮',amount:'9g'}
+        ],
+        action:'滋补肝肾。适用于肝肾阴虚证，症见腰膝酸软、头晕耳鸣、盗汗遗精、口干咽燥、手足心热。',
+        caution:'脾虚便溏、湿热内盛者慎用。感冒期间暂停服用。'
+      },
+      {
+        id:'jin_gui_shen_qi',
+        name:'金匮肾气丸',
+        pinyin:'Jin Gui Shen Qi Wan',
+        matchTags:['yang_xu'],
+        matchLevel:'高',
+        ingredients:[
+          {name:'熟地黄',amount:'24g'},{name:'山茱萸',amount:'12g'},
+          {name:'山药',amount:'12g'},{name:'泽泻',amount:'9g'},
+          {name:'茯苓',amount:'9g'},{name:'牡丹皮',amount:'9g'},
+          {name:'桂枝',amount:'3g'},{name:'附子',amount:'3g'}
+        ],
+        action:'温补肾阳。适用于肾阳不足证，症见腰膝酸软、畏寒肢冷、小便不利或反多、痰饮喘咳。',
+        caution:'阴虚火旺、实热证者禁用。附子有毒，需炮制后使用，不可过量。'
+      },
+      {
+        id:'xiao_yao_san',
+        name:'逍遥散',
+        pinyin:'Xiao Yao San',
+        matchTags:['gan_yu'],
+        matchLevel:'高',
+        ingredients:[
+          {name:'柴胡',amount:'9g'},{name:'白芍',amount:'9g'},
+          {name:'当归',amount:'9g'},{name:'白术',amount:'9g'},
+          {name:'茯苓',amount:'9g'},{name:'薄荷',amount:'3g'},
+          {name:'生姜',amount:'3片'},{name:'甘草',amount:'6g'}
+        ],
+        action:'疏肝解郁，健脾养血。适用于肝气郁结证，症见胸胁胀痛、情志抑郁、食欲不振、月经不调。',
+        caution:'阴虚火旺者慎用。'
+      },
+      {
+        id:'long_dan_xie_gan',
+        name:'龙胆泻肝汤',
+        pinyin:'Long Dan Xie Gan Tang',
+        matchTags:['shi_re'],
+        matchLevel:'高',
+        ingredients:[
+          {name:'龙胆草',amount:'6g'},{name:'黄芩',amount:'9g'},
+          {name:'栀子',amount:'9g'},{name:'泽泻',amount:'9g'},
+          {name:'木通',amount:'6g'},{name:'车前子',amount:'9g'},
+          {name:'当归',amount:'6g'},{name:'生地黄',amount:'9g'},
+          {name:'柴胡',amount:'6g'},{name:'甘草',amount:'3g'}
+        ],
+        action:'清肝胆实火，利湿热。适用于肝胆湿热证，症见胁痛口苦、目赤耳鸣、小便黄赤、阴肿阴痒。',
+        caution:'本方苦寒，脾胃虚寒者慎用。不宜久服，中病即止。孕妇慎用。'
+      },
+      {
+        id:'er_chen_tang',
+        name:'二陈汤',
+        pinyin:'Er Chen Tang',
+        matchTags:['tan_shi','ke_sou'],
+        matchLevel:'中',
+        ingredients:[
+          {name:'半夏',amount:'9g'},{name:'陈皮',amount:'9g'},
+          {name:'茯苓',amount:'9g'},{name:'甘草',amount:'3g'},
+          {name:'生姜',amount:'3片'},{name:'乌梅',amount:'1枚'}
+        ],
+        action:'燥湿化痰，理气和中。适用于湿痰证，症见咳嗽痰多、色白易咳、胸膈痞闷、恶心呕吐、肢体困重。',
+        caution:'阴虚燥咳、痰中带血者不宜使用。'
+      },
+      {
+        id:'suan_zao_ren_tang',
+        name:'酸枣仁汤',
+        pinyin:'Suan Zao Ren Tang',
+        matchTags:['shi_mian'],
+        matchLevel:'高',
+        ingredients:[
+          {name:'酸枣仁',amount:'15g'},{name:'知母',amount:'6g'},
+          {name:'茯苓',amount:'6g'},{name:'川芎',amount:'6g'},
+          {name:'甘草',amount:'3g'}
+        ],
+        action:'养血安神，清热除烦。适用于肝血不足、虚热扰神证，症见虚烦失眠、心悸盗汗、头晕目眩、咽干口燥。',
+        caution:'实热证失眠不宜使用。'
+      },
+      {
+        id:'tian_wang_bu_xin',
+        name:'天王补心丹',
+        pinyin:'Tian Wang Bu Xin Dan',
+        matchTags:['shi_mian'],
+        matchLevel:'中',
+        ingredients:[
+          {name:'生地黄',amount:'12g'},{name:'天冬',amount:'6g'},
+          {name:'麦冬',amount:'6g'},{name:'当归',amount:'6g'},
+          {name:'酸枣仁',amount:'9g'},{name:'柏子仁',amount:'9g'},
+          {name:'远志',amount:'6g'},{name:'人参',amount:'6g'},
+          {name:'五味子',amount:'6g'},{name:'丹参',amount:'6g'},
+          {name:'玄参',amount:'6g'},{name:'桔梗',amount:'6g'}
+        ],
+        action:'滋阴养血，补心安神。适用于阴虚血少、心神不宁证，症见心悸失眠、虚烦健忘、手足心热、口舌生疮。',
+        caution:'脾胃虚寒、食少便溏者慎用。'
+      },
+      {
+        id:'zhi_sou_san',
+        name:'止嗽散',
+        pinyin:'Zhi Sou San',
+        matchTags:['ke_sou'],
+        matchLevel:'高',
+        ingredients:[
+          {name:'桔梗',amount:'9g'},{name:'荆芥',amount:'9g'},
+          {name:'紫菀',amount:'9g'},{name:'百部',amount:'9g'},
+          {name:'白前',amount:'9g'},{name:'陈皮',amount:'6g'},
+          {name:'甘草',amount:'3g'}
+        ],
+        action:'宣利肺气，疏风止咳。适用于风邪犯肺证，症见咳嗽咽痒、咳痰不爽、微恶风发热。',
+        caution:'阴虚劳嗽、咯血者不宜使用。'
+      },
+      {
+        id:'shen_ling_bai_zhu',
+        name:'参苓白术散',
+        pinyin:'Shen Ling Bai Zhu San',
+        matchTags:['pi_wei','qi_xu'],
+        matchLevel:'高',
+        ingredients:[
+          {name:'人参',amount:'9g'},{name:'白术',amount:'9g'},
+          {name:'茯苓',amount:'9g'},{name:'山药',amount:'9g'},
+          {name:'莲子肉',amount:'9g'},{name:'薏苡仁',amount:'9g'},
+          {name:'砂仁',amount:'6g'},{name:'桔梗',amount:'6g'},
+          {name:'白扁豆',amount:'9g'},{name:'甘草',amount:'6g'}
+        ],
+        action:'益气健脾，渗湿止泻。适用于脾虚湿盛证，症见食少便溏、四肢乏力、面色萎黄、舌淡苔白腻。',
+        caution:'湿热泄泻者不宜使用。'
+      },
+      {
+        id:'ma_xing_shi_gan',
+        name:'麻杏石甘汤',
+        pinyin:'Ma Xing Shi Gan Tang',
+        matchTags:['feng_re','ke_sou'],
+        matchLevel:'中',
+        ingredients:[
+          {name:'麻黄',amount:'6g'},{name:'杏仁',amount:'9g'},
+          {name:'石膏',amount:'18g'},{name:'甘草',amount:'6g'}
+        ],
+        action:'辛凉宣肺，清热平喘。适用于肺热壅盛证，症见身热不解、咳逆气急、鼻煽口渴、有汗或无汗。',
+        caution:'风寒咳嗽、虚寒证者不宜使用。'
+      },
+      {
+        id:'xiao_chai_hu',
+        name:'小柴胡汤',
+        pinyin:'Xiao Chai Hu Tang',
+        matchTags:['jia_gan','gan_yu'],
+        matchLevel:'中',
+        ingredients:[
+          {name:'柴胡',amount:'12g'},{name:'黄芩',amount:'9g'},
+          {name:'人参',amount:'6g'},{name:'半夏',amount:'9g'},
+          {name:'生姜',amount:'9g'},{name:'大枣',amount:'4枚'},
+          {name:'甘草',amount:'6g'}
+        ],
+        action:'和解少阳。适用于伤寒少阳证，症见往来寒热、胸胁苦满、默默不欲饮食、心烦喜呕、口苦咽干。',
+        caution:'阴虚血热者慎用。'
+      },
+      {
+        id:'dang_gui_bu_xue',
+        name:'当归补血汤',
+        pinyin:'Dang Gui Bu Xue Tang',
+        matchTags:['xue_xu','qi_xu'],
+        matchLevel:'中',
+        ingredients:[
+          {name:'黄芪',amount:'30g'},{name:'当归',amount:'6g'}
+        ],
+        action:'补气生血。适用于血虚发热证，症见肌热面红、烦渴欲饮、脉洪大而虚、重按无力。',
+        caution:'阴虚发热者不宜使用。'
+      },
+      {
+        id:'ma_zi_ren_wan',
+        name:'麻子仁丸',
+        pinyin:'Ma Zi Ren Wan',
+        matchTags:['bian_mi'],
+        matchLevel:'高',
+        ingredients:[
+          {name:'麻子仁',amount:'20g'},{name:'大黄',amount:'12g'},
+          {name:'杏仁',amount:'10g'},{name:'白芍',amount:'9g'},
+          {name:'厚朴',amount:'9g'},{name:'枳实',amount:'9g'}
+        ],
+        action:'润肠泻热，行气通便。适用于肠胃燥热、津液不足之便秘，症见大便干结、小便频数。',
+        caution:'孕妇及体虚者慎用。不宜长期服用。'
+      },
+      {
+        id:'chuan_xiong_cha_tiao',
+        name:'川芎茶调散',
+        pinyin:'Chuan Xiong Cha Tiao San',
+        matchTags:['tou_tong'],
+        matchLevel:'高',
+        ingredients:[
+          {name:'川芎',amount:'12g'},{name:'荆芥',amount:'12g'},
+          {name:'白芷',amount:'6g'},{name:'羌活',amount:'6g'},
+          {name:'细辛',amount:'3g'},{name:'防风',amount:'6g'},
+          {name:'薄荷',amount:'12g'},{name:'甘草',amount:'6g'}
+        ],
+        action:'疏风止痛。适用于外感风邪头痛，症见偏正头痛、巅顶作痛、恶寒发热、目眩鼻塞。',
+        caution:'气虚、血虚、肝阳上亢所致头痛者不宜使用。细辛用量不宜过大。'
+      }
+    ];
+
+    // ===== STATE =====
+    let selectedSymptoms = new Set();
+
+    // ===== RENDER SYMPTOMS =====
+    function renderSymptoms(){
+      const container = document.getElementById('symptomContainer');
+      container.innerHTML = SYMPTOM_GROUPS.map(group => `
+        <div class="symptom-group">
+          <div class="symptom-label">${group.label}</div>
+          <div class="tag-wrap">
+            ${group.symptoms.map(s => `
+              <div class="tag ${selectedSymptoms.has(s.id) ? 'selected' : ''}"
+                   onclick="toggleSymptom('${s.id}')">
+                ${s.text}
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function toggleSymptom(id){
+      if(selectedSymptoms.has(id)){
+        selectedSymptoms.delete(id);
+      } else {
+        selectedSymptoms.add(id);
+      }
+      renderSymptoms();
+      updateSubmitButton();
+    }
+
+    function updateSubmitButton(){
+      const btn = document.getElementById('btnSubmit');
+      btn.disabled = selectedSymptoms.size === 0;
+      btn.textContent = selectedSymptoms.size === 0
+        ? '🌿 请选择至少一个症状'
+        : `🌿 查看推荐配方 (已选${selectedSymptoms.size}项)`;
+    }
+
+    // ===== MATCHING ENGINE =====
+    function getPrescription(){
+      if(selectedSymptoms.size === 0){ alert('请至少选择一个症状'); return; }
+
+      const selected = [...selectedSymptoms];
+
+      // Score each prescription
+      const scored = PRESCRIPTIONS.map(p => {
+        let matchCount = 0;
+        p.matchTags.forEach(tag => {
+          if(selected.includes(tag)) matchCount++;
+        });
+        // Bonus for partial matches
+        let partialScore = 0;
+        selected.forEach(s => {
+          p.matchTags.forEach(tag => {
+            // Check if symptoms are related (e.g., 'ke_sou' and 'feng_re' might overlap)
+            if(s !== tag && isRelated(s, tag)) partialScore += 0.3;
+          });
+        });
+        return { ...p, score: matchCount + partialScore };
+      });
+
+      // Sort by score descending, filter out zero scores
+      const ranked = scored.filter(p => p.score > 0).sort((a, b) => b.score - a.score);
+
+      // Take top results (up to 2)
+      const results = ranked.slice(0, 2);
+
+      if(results.length === 0){
+        alert('当前症状组合未匹配到经典方剂，建议咨询专业中医师。');
+        return;
+      }
+
+      showResults(results);
+    }
+
+    // Related symptom mapping for partial matching
+    const RELATED_MAP = {
+      'feng_han': ['ke_sou','tou_tong'],
+      'feng_re': ['ke_sou','tou_tong','shi_mian'],
+      'jia_gan': ['pi_wei','tan_shi'],
+      'qi_xu': ['pi_wei','wei_qi','xue_xu'],
+      'xue_xu': ['qi_xu','shi_mian'],
+      'yin_xu': ['shi_mian','bian_mi'],
+      'yang_xu': ['pi_wei'],
+      'pi_wei': ['qi_xu','tan_shi'],
+      'gan_yu': ['shi_mian'],
+      'shi_re': ['pi_wei','bian_mi'],
+      'tan_shi': ['pi_wei','ke_sou'],
+      'ke_sou': ['feng_han','feng_re','tan_shi'],
+      'tou_tong': ['feng_han','feng_re','gan_yu'],
+    };
+
+    function isRelated(s1, s2){
+      return (RELATED_MAP[s1] && RELATED_MAP[s1].includes(s2)) ||
+             (RELATED_MAP[s2] && RELATED_MAP[s2].includes(s1));
+    }
+
+    // ===== SHOW RESULTS =====
+    function showResults(results){
+      const resultArea = document.getElementById('resultArea');
+      const container = document.getElementById('prescriptionContainer');
+      const inputCard = document.getElementById('inputCard');
+
+      container.innerHTML = results.map(r => {
+        const badgeCls = r.matchLevel === '高' ? 'high' : 'medium';
+        return `
+          <div class="prescription-card">
+            <div class="prescription-header">
+              <h2>${r.name}</h2>
+              <div class="pinyin">${r.pinyin}</div>
+              <div class="match-badge ${badgeCls}">匹配度：${r.matchLevel}</div>
+            </div>
+            <div class="prescription-body">
+              <div class="ingredient-list">
+                <h4>📝 配方组成</h4>
+                ${r.ingredients.map(i =>
+                  `<div class="ingredient-item"><span class="name">${i.name}</span><span class="amount">${i.amount}</span></div>`
+                ).join('')}
+              </div>
+              <div class="action-section">
+                <h4>💊 功效与作用</h4>
+                <p>${r.action}</p>
+              </div>
+              <div class="caution-section">
+                <h4>⚠️ 注意事项</h4>
+                <p>${r.caution}</p>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      inputCard.style.display = 'none';
+      resultArea.classList.add('show');
+      resultArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    // ===== RESET =====
+    function resetAll(){
+      selectedSymptoms.clear();
+      document.getElementById('inputCard').style.display = 'block';
+      document.getElementById('resultArea').classList.remove('show');
+      renderSymptoms();
+      updateSubmitButton();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // ===== INIT =====
+    renderSymptoms();
+    updateSubmitButton();
+  </script>
+</body>
+</html>
